@@ -17,11 +17,6 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Extract source
-        run: |
-          mkdir source
-          unzip -q POCOF7_SmoothZoom_LSPosed_source.zip -d source
-
       - name: Install Gradle
         uses: gradle/actions/setup-gradle@v4
         with:

@@ -1,33 +1,49 @@
-# POCO F7 Smooth Zoom — LSPosed v2
+# POCO F7 Smooth Zoom — LSPosed
 
-Target: `com.android.camera` version `6.7.000070.0` on POCO F7 / HyperOS 3.
+Target verified from the supplied `com.android.camera` APK:
 
-## Fitur
+- Camera package: `com.android.camera`
+- Camera version: `6.7.000070.0`
+- Device target: POCO F7
+- HyperOS: 3.0.301.0
+- Zoom path found in the APK:
+  - `Lk9/k; implements Lj9/a;`
+  - `Lk9/k;.onScale(LL8/i;)Z`
+  - `Lk9/k;.y0(float,int)Z`
 
-- Smooth pinch-to-zoom.
-- Tombol zoom langsung di UI kamera: **0.6x / 1x / 2x / 5x / 10x**.
-- Sekali tap tombol menjalankan animasi smooth; tidak perlu menahan/geser.
-- Bisa tap target lain saat animasi berjalan.
-- Pengaturan APK yang sekarang bisa dibuka dari launcher:
-  - **Smoothness** 0.15–0.50.
-  - **Max Zoom** 2x–100x.
-  - **Durasi animasi** 120–1500 ms.
+## What it does
+
+The module applies an exponential low-pass filter only while `y0(float,int)` is
+called synchronously from `onScale(LL8/i)`. This means it targets pinch-to-zoom
+updates instead of globally slowing every camera zoom operation.
+
+Default smoothing:
+
+`ALPHA = 0.22`
+
+- 0.15–0.20: smoother, slower response
+- 0.22–0.28: balanced
+- 0.30–0.35: more responsive
 
 ## Build
 
-Buka project di Android Studio dan build `app`.
+Open this folder in Android Studio and build the `app` module.
 
-Dependency LSPosed/Xposed API tetap compile-only:
+The LSPosed API is compile-only:
+
 `de.robv.android.xposed:api:82`
 
 ## Install
 
-1. Build/install APK.
-2. Aktifkan modul di LSPosed.
-3. Scope ke `com.android.camera`.
-4. Force-stop Camera atau reboot.
-5. Buka Camera. Baris tombol zoom akan muncul di bagian bawah layar.
+1. Build/install the APK.
+2. Enable it in LSPosed.
+3. Scope it to `com.android.camera`.
+4. Force-stop Camera or reboot.
+5. Test pinch-to-zoom in Camera.
 
-## Catatan
+## Safety / rollback
 
-Tombol 5x/10x mengirim target zoom melalui method `Lk9.k.y0(float,int)` yang sudah dipakai oleh versi sebelumnya. `Max Zoom` memungkinkan target lebih tinggi, tetapi batas nyata tetap bergantung pada implementasi digital zoom Camera.
+If Camera force-closes, disable the module in LSPosed. The hook is deliberately
+limited to the exact package and exact method signatures found in the supplied APK.
+
+This is a source build, not a precompiled APK.

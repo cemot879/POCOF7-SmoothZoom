@@ -1,8 +1,7 @@
-name: Build Smooth Zoom
+name: Build Smooth Zoom Diagnostic
 
 on:
   push:
-  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -16,29 +15,67 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Find and extract project ZIP
+        shell: bash
+        run: |
+          set -e
+
+          ZIP_FILE=$(find . -maxdepth 2 -type f -name '*.zip' | head -n 1)
+
+          if [ -z "$ZIP_FILE" ]; then
+            echo "ERROR: Project ZIP not found"
+            exit 1
+          fi
+
+          echo "Using: $ZIP_FILE"
+
+          rm -rf project
+          mkdir project
+
+          unzip -q "$ZIP_FILE" -d project
+
+          echo "Extracted files:"
+          find project -maxdepth 3 -type f | sort
+
+      - name: Locate Gradle project
+        shell: bash
+        run: |
+          set -e
+
+          SETTINGS=$(find project -type f -name 'settings.gradle' -o -name 'settings.gradle.kts' | head -n 1)
+
+          if [ -z "$SETTINGS" ]; then
+            echo "ERROR: settings.gradle not found inside ZIP"
+            exit 1
+          fi
+
+          PROJECT_DIR=$(dirname "$SETTINGS")
+
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+
+          echo "Gradle project:"
+          echo "$PROJECT_DIR"
+
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-          cache: gradle
-
-      - name: Set up Gradle 8.7
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
 
       - name: Generate Gradle wrapper
+        working-directory: ${{ env.PROJECT_DIR }}
         run: |
           gradle wrapper --gradle-version 8.7 --distribution-type bin
           chmod +x gradlew
 
       - name: Build APK
-        run: ./gradlew --no-daemon clean assembleDebug
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          ./gradlew --no-daemon clean assembleDebug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: POCOF7-SmoothZoom-debug
-          path: app/build/outputs/apk/debug/*.apk
+          name: POCOF7-SmoothZoom-diagnostic
+          path: ${{ env.PROJECT_DIR }}/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
